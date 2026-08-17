@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generator QR Code Standalone</title>
+    <!-- Kita pakai library pembuat QR Code langsung dari browser -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #0f172a; 
+            color: #f8fafc; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            margin: 0; 
+            padding: 20px;
+        }
+        .card { 
+            background-color: #1e293b; 
+            padding: 30px; 
+            border-radius: 15px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5); 
+            width: 100%; 
+            max-width: 400px; 
+            border: 1px solid #334155;
+        }
+        h2 { text-align: center; margin-top: 0; color: #38bdf8; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 7px; font-size: 14px; color: #94a3b8; }
+        input, select { 
+            width: 100%; 
+            padding: 12px; 
+            border: 1px solid #475569; 
+            border-radius: 8px; 
+            background-color: #0f172a; 
+            color: white; 
+            box-sizing: border-box; 
+            font-size: 14px;
+        }
+        input:focus, select:focus { outline: none; border-color: #38bdf8; }
+        .btn-generate { 
+            width: 100%; 
+            padding: 14px; 
+            background-color: #38bdf8; 
+            color: #0f172a; 
+            border: none; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            font-size: 16px;
+            cursor: pointer; 
+            margin-top: 15px; 
+            transition: 0.2s; 
+        }
+        .btn-generate:hover { background-color: #0ea5e9; }
+        
+        .btn-download {
+            width: 100%; 
+            padding: 14px; 
+            background-color: #22c55e; 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            font-size: 16px;
+            cursor: pointer; 
+            margin-top: 15px; 
+            transition: 0.2s;
+            display: none; /* Disembunyikan sebelum QR dibuat */
+        }
+        .btn-download:hover { background-color: #16a34a; }
+
+        #qrcode-container {
+            margin-top: 25px;
+            display: flex;
+            justify-content: center;
+            background-color: white;
+            padding: 15px;
+            border-radius: 10px;
+            display: none; /* Disembunyikan sebelum QR dibuat */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>🛠️ Cetak QR Pegawai/Siswa</h2>
+        
+        <div class="form-group">
+            <label>ID / NIK / NIS</label>
+            <input type="text" id="id_user" placeholder="Contoh: 001">
+        </div>
+
+        <div class="form-group">
+            <label>Nama Lengkap</label>
+            <input type="text" id="nama" placeholder="Contoh: Budi Santoso">
+        </div>
+
+        <div class="form-group">
+            <label>Departemen / Divisi</label>
+            <input type="text" id="divisi" placeholder="Contoh: Dapur / HRD / 12 IPA">
+        </div>
+
+        <div class="form-group">
+            <label>Role / Status</label>
+            <!-- Ini sistem Select yang kamu minta -->
+            <select id="role">
+                <option value="Pelajar">Pelajar</option>
+                <option value="Guru">Guru</option>
+                <option value="Mahasiswa">Mahasiswa</option>
+                <option value="Pekerja Kantoran">Pekerja Kantoran</option>
+            </select>
+        </div>
+
+        <button class="btn-generate" onclick="buatQR()">Buat QR Code</button>
+
+        <!-- Tempat QR Code Muncul -->
+        <div id="qrcode-container"></div>
+
+        <button class="btn-download" id="btn-download" onclick="downloadQR()">⬇️ Download Gambar PNG</button>
+    </div>
+
+    <script>
+        // Logika Vibe Coder untuk bikin QR langsung di Browser
+        let qrCodeObj = null;
+
+        function buatQR() {
+            const id = document.getElementById('id_user').value;
+            const nama = document.getElementById('nama').value;
+            const divisi = document.getElementById('divisi').value;
+            const role = document.getElementById('role').value;
+
+            // Peringatan kalau ada yang kosong
+            if(!id || !nama || !divisi) {
+                alert("Hei! Isi semua kotaknya dulu ya!");
+                return;
+            }
+
+            // Gabungkan data sesuai format scanner sistem utama
+            const dataQR = `${id}|${nama}|${divisi}|${role}`;
+
+            const qrContainer = document.getElementById("qrcode-container");
+            qrContainer.style.display = "flex"; // Tampilkan kotak putih
+            qrContainer.innerHTML = ""; // Bersihkan QR sebelumnya (jika ada)
+
+            // Bikin QR Code nya
+            qrCodeObj = new QRCode(qrContainer, {
+                text: dataQR,
+                width: 200,
+                height: 200,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+
+            // Tampilkan tombol download
+            document.getElementById("btn-download").style.display = "block";
+        }
+
+        function downloadQR() {
+            // Ambil gambar dari kanvas asli yang dibuat library
+            const canvasAsli = document.querySelector('#qrcode-container canvas');
+            
+            if(canvasAsli) {
+                // Tentukan seberapa tebal tepi putihnya (Quiet Zone)
+                const padding = 20; // 20 pixel border putih
+                
+                // Bikin kanvas baru yang ukurannya lebih besar
+                const canvasBaru = document.createElement('canvas');
+                canvasBaru.width = canvasAsli.width + (padding * 2);
+                canvasBaru.height = canvasAsli.height + (padding * 2);
+                
+                const ctx = canvasBaru.getContext('2d');
+                
+                // Warnai seluruh kanvas baru dengan warna putih
+                ctx.fillStyle = "#ffffff";
+                ctx.fillRect(0, 0, canvasBaru.width, canvasBaru.height);
+                
+                // Tempel gambar QR asli di tengah-tengah kanvas putih
+                ctx.drawImage(canvasAsli, padding, padding);
+
+                // Sekarang download dari kanvas baru yang sudah ada margin putihnya
+                const url = canvasBaru.toDataURL("image/png");
+                const a = document.createElement('a');
+                
+                // Ambil nama untuk dijadikan nama file
+                const nama = document.getElementById('nama').value;
+                const divisi = document.getElementById('divisi').value;
+                
+                // Bikin nama file bersih tanpa spasi
+                a.download = `QR_${nama.replace(/\s+/g, '_')}_${divisi}.png`;
+                a.href = url;
+                a.click();
+            }
+        }
+    </script>
+</body>
+</html>
